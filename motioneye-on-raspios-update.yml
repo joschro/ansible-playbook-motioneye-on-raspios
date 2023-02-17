@@ -1,0 +1,20 @@
+- name: Update MotionEye on Raspberry Pi
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Stop MotionEye
+      systemd:
+        name: motioneye
+        state: stopped
+
+    - name: Update MotionEye
+      command: pip3 install --upgrade --force-reinstall --no-deps 'https://github.com/motioneye-project/motioneye/archive/dev.tar.gz'
+    - name: Update the packages
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+
+    - name: Reboot
+      reboot:

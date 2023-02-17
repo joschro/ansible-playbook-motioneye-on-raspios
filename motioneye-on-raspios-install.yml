@@ -1,0 +1,88 @@
+- name: Install MotionEye on Raspberry Pi
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Update the package index
+      apt: update_cache=yes
+
+    - name: Install required packages
+      apt: name={{ item }} state=present
+      with_items:
+        - git
+        - ca-certificates
+        - curl
+        - python3
+        - python3-distutils
+        - python3-pip
+        - ffmpeg
+        - motion
+        - v4l-utils
+
+          #    - name: Clone MotionEye repository
+          #      git:
+          #        repo: https://github.com/motioneye-project/motioneye.git
+          #        dest: /tmp/motioneye
+
+          #    - name: Create pip.conf
+          #      blockinfile:
+          #        path: /etc/pip.conf
+          #        create: yes
+          #        block: |
+          #          [global]
+          #          extra-index-url=https://www.piwheels.org/simple/
+
+    - name: Install MotionEye
+      command: pip3 install 'https://github.com/motioneye-project/motioneye/archive/dev.tar.gz'
+
+    - name: Initialize motioneye
+      command: motioneye_init
+        #    - name: Create motioneye user
+        #      user: name=motioneye system=yes
+
+        #    - name: Create motioneye configuration directory
+        #      file: path=/etc/motioneye state=directory
+
+        #    - name: Copy MotionEye configuration files
+        #      copy:
+        #        src: /usr/local/share/motioneye/extra/motioneye.conf.sample
+        #        dest: /etc/motioneye/motioneye.conf
+        #        remote_src: true
+
+        #    - name: Create media directory
+        #      file: path=/var/lib/motioneye state=directory
+
+        #    - name: Copy MotionEye server file
+        #      copy: src=/usr/local/share/motioneye/extra/motioneye.systemd-unit-local dest=/etc/systemd/system/motioneye.service remote_src=true
+
+        #    - name: Start MotionEye
+        #      systemd:
+        #        name: motioneye
+        #        enabled: true
+        #        daemon_reload: true
+        #        state: restarted
+    - name: Enable wifi settings in UI
+      lineinfile:
+        path: /etc/motioneye/motioneye.conf
+        search_string: 'wpa_supplicant_conf'
+        insertafter: '^#wpa_supplicant_conf'
+        line: wpa_supplicant_conf /etc/wpa_supplicant/wpa_supplicant.conf
+        state: present
+      tags: config
+
+    - name: Enable timezone settings in UI
+      lineinfile:
+        path: /etc/motioneye/motioneye.conf
+        search_string: 'local_time_file'
+        insertafter: '^#local_time_file'
+        line: local_time_file /etc/localtime
+        state: present
+      tags: config
+
+    - name: Enable reboot option in UI
+      lineinfile:
+        path: /etc/motioneye/motioneye.conf
+        search_string: 'enable_reboot'
+        line: enable_reboot true
+        state: present
+      tags: config
