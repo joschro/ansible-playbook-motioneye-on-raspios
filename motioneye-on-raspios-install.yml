@@ -86,3 +86,8 @@
         line: enable_reboot true
         state: present
       tags: config
+
+    - name: Add s attribute for /bin/systemctl
+      file:
+        path: /bin/systemctl
+        mode: a+s
