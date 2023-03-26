@@ -35,6 +35,9 @@
     - name: Install MotionEye
       command: pip3 install 'https://github.com/motioneye-project/motioneye/archive/dev.tar.gz'
 
+    - name: Install pytz
+      command: pip3 install pytz
+
     - name: Initialize motioneye
       command: motioneye_init
         #    - name: Create motioneye user
