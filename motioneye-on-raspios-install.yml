@@ -58,12 +58,13 @@
         #    - name: Copy MotionEye server file
         #      copy: src=/usr/local/share/motioneye/extra/motioneye.systemd-unit-local dest=/etc/systemd/system/motioneye.service remote_src=true
 
-        #    - name: Start MotionEye
-        #      systemd:
-        #        name: motioneye
-        #        enabled: true
-        #        daemon_reload: true
-        #        state: restarted
+    - name: Disable Motion daemon
+      systemd:
+        name: motion
+        enabled: false
+        daemon_reload: true
+        state: stopped
+
     - name: Enable wifi settings in UI
       lineinfile:
         path: /etc/motioneye/motioneye.conf
