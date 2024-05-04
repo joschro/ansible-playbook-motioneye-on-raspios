@@ -9,3 +9,5 @@ Steps from https://github.com/motioneye-project/motioneye/tree/dev#installation
 
 
 ansible-playbook motioneye-on-raspios-install.yml -i ../private/hosts -l rpi0-w-usbcam-01
+
+Then point your browser to http://<ip-address>:8765
