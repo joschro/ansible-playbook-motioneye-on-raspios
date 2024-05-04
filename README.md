@@ -1,5 +1,5 @@
 # ansible-playbook-motioneye-on-raspios
-Install motioneye on [RaspiOS](https://downloads.raspberrypi.com/raspios_lite_armhf/images/)
+Install motioneye on [RaspiOS 32bit](https://downloads.raspberrypi.com/raspios_lite_armhf/images/) (e.g. Raspberry Pi Zero) or [RaspiOS 64bit](https://downloads.raspberrypi.com/raspios_lite_arm64/images/) (e.g. Raspberry Pi Zero 2)
 
 Steps from https://github.com/motioneye-project/motioneye/tree/dev#installation
 
