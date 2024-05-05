@@ -1,12 +1,58 @@
 - name: Install MotionEye on Raspberry Pi
   hosts: all
-  become: yes
   
   tasks:
     - name: Update the package index
+      become: yes
       apt: update_cache=yes
+      when: 
+        - ansible_facts['distribution'] == 'Debian'
+
+    - name: Make sure that an empty requirements.yml file exists
+      delegate_to: 127.0.0.1
+      file:
+        path: requirements.yml
+        state: touch
+      when: 
+        - ansible_facts['distribution'] == 'Fedora'
+
+    - name: Create requirements.yml
+      delegate_to: 127.0.0.1
+      blockinfile:
+        path: requirements.yml
+        create: yes
+        block: |
+          # Install a role from the Ansible Galaxy
+          #- src: joschro.rpmfusion
+          
+          # Install a role from GitHub
+          - src: https://github.com/joschro/ansible-role-rpmfusion
+            name: joschro.rpmfusion
+      when: 
+        - ansible_facts['distribution'] == 'Fedora'
 
     - name: Install required packages
+      become: yes
+      package:
+        name: git
+        state: present
+      when: 
+        - ansible_facts['distribution'] == 'Fedora'
+
+    - name: Source required roles
+      local_action: command ansible-galaxy install -r requirements.yml
+      # (add parameter --force to update role on succeeding runs of playbook)
+      when: 
+        - ansible_facts['distribution'] == 'Fedora'
+
+    - name: Execute role
+      include_role:
+        name: joschro.rpmfusion
+      when: 
+        - ansible_facts['distribution'] == 'Fedora'
+
+    - name: Install required packages
+      become: yes
       apt: name={{ item }} state=present
       with_items:
         - git
@@ -31,26 +77,75 @@
           #        block: |
           #          [global]
           #          extra-index-url=https://www.piwheels.org/simple/
+      when: 
+        - ansible_facts['distribution'] == 'Debian'
+
+    - name: Install required packages
+      become: yes
+      package: name={{ item }} state=present
+      with_items:
+        - curl
+        - python-pip
+        - python-devel
+        - gcc
+        - libcurl-devel
+        - pango-devel
+        - ffmpeg
+        - motion
+        - v4l-utils
+      when: 
+        - ansible_facts['distribution'] == 'Fedora'
+
+    - name: Disable strict version requirements on Debian Bookworm or later
+      become: yes
+      lineinfile:
+        path: /etc/pip.conf
+        insertafter: '^\\[global\\]'
+        line: 'break-system-packages=true'
+        state: present
+      when:
+        - ansible_facts['distribution'] == 'Debian'
+        - ansible_facts['distribution_major_version'] | int >= 12
+    
+    - name: Install MotionEye
+      become: yes
+      command: pip3 install 'https://github.com/motioneye-project/motioneye/archive/dev.tar.gz'
+      #command: pip3 install --pre motioneye
+      when:
+        - ansible_facts['distribution'] == 'Debian'
 
     - name: Install MotionEye
+      become: yes
       command: pip3 install 'https://github.com/motioneye-project/motioneye/archive/dev.tar.gz'
+      when:
+        - ansible_facts['distribution'] == 'Fedora'
 
     - name: Install pytz
+      become: yes
       command: pip3 install pytz
+      when:
+        - ansible_facts['distribution'] == 'Debian'
 
     - name: Initialize motioneye
+      become: yes
       command: motioneye_init
         #    - name: Create motioneye user
         #      user: name=motioneye system=yes
 
-        #    - name: Create motioneye configuration directory
-        #      file: path=/etc/motioneye state=directory
+    - name: Create motioneye configuration directory
+      become: yes
+      file: path=/etc/motioneye state=directory
+      when:
+        - ansible_facts['distribution'] == 'Fedora'
 
-        #    - name: Copy MotionEye configuration files
-        #      copy:
-        #        src: /usr/local/share/motioneye/extra/motioneye.conf.sample
-        #        dest: /etc/motioneye/motioneye.conf
-        #        remote_src: true
+    - name: Copy MotionEye configuration files
+      become: yes
+      copy:
+        src: /usr/share/motioneye/extra/motioneye.conf.sample
+        dest: /etc/motioneye/motioneye.conf
+        remote_src: true
+      when:
+        - ansible_facts['distribution'] == 'Fedora'
 
         #    - name: Create media directory
         #      file: path=/var/lib/motioneye state=directory
@@ -58,7 +153,14 @@
         #    - name: Copy MotionEye server file
         #      copy: src=/usr/local/share/motioneye/extra/motioneye.systemd-unit-local dest=/etc/systemd/system/motioneye.service remote_src=true
 
+    - name: Copy MotionEye server file
+      become: yes
+      copy: src=/usr/share/motioneye/extra/motioneye.systemd-unit dest=/etc/systemd/system/motioneye.service remote_src=true
+      when:
+        - ansible_facts['distribution'] == 'Fedora'
+
     - name: Disable Motion daemon
+      become: yes
       systemd:
         name: motion
         enabled: false
@@ -66,6 +168,7 @@
         state: stopped
 
     - name: Enable wifi settings in UI
+      become: yes
       lineinfile:
         path: /etc/motioneye/motioneye.conf
         search_string: 'wpa_supplicant_conf'
@@ -75,6 +178,7 @@
       tags: config
 
     - name: Enable timezone settings in UI
+      become: yes
       lineinfile:
         path: /etc/motioneye/motioneye.conf
         search_string: 'local_time_file'
@@ -84,6 +188,7 @@
       tags: config
 
     - name: Enable reboot option in UI
+      become: yes
       lineinfile:
         path: /etc/motioneye/motioneye.conf
         search_string: 'enable_reboot'
@@ -92,6 +197,25 @@
       tags: config
 
     - name: Add s attribute for /bin/systemctl
+      become: yes
       file:
         path: /bin/systemctl
         mode: a+s
+      when:
+        - ansible_facts['distribution'] == 'Debian'
+
+    - name: Enable and start motioneye service
+      become: yes
+      systemd_service:
+        daemon_reload: true
+      when:
+        - ansible_facts['distribution'] == 'Fedora'
+
+    - name: Enable and start motioneye service
+      become: yes
+      systemd_service:
+        name: motioneye
+        state: started
+        enabled: true
+      when:
+        - ansible_facts['distribution'] == 'Fedora'
