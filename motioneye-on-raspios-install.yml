@@ -217,7 +217,7 @@
       when:
         - ansible_facts['distribution'] == 'Debian'
 
-    - name: Enable and start motioneye service
+    - name: Reload services
       become: yes
       systemd_service:
         daemon_reload: true
