@@ -64,6 +64,8 @@
         - ffmpeg
         - motion
         - v4l-utils
+        - libcamera-v4l2
+        - libcamera-tools
 
           #    - name: Clone MotionEye repository
           #      git:
