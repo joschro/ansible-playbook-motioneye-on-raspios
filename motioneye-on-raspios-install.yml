@@ -93,6 +93,8 @@
         - ffmpeg
         - motion
         - v4l-utils
+        - libcamera-v4l2
+        - libcamera-tools
       when: 
         - ansible_facts['distribution'] == 'Fedora'
 
@@ -158,6 +160,17 @@
       copy: src=/usr/share/motioneye/extra/motioneye.systemd-unit dest=/etc/systemd/system/motioneye.service remote_src=true
       when:
         - ansible_facts['distribution'] == 'Fedora'
+
+    - name: Use libcamerify on Debian Bookworm or later
+      become: yes
+      lineinfile:
+        path: /etc/systemd/system/motioneye.service
+        search_string: 'ExecStart=/usr/local/bin/meyectl startserver -c /etc/motioneye/motioneye.conf'
+        line: ExecStart=/usr/bin/libcamerify /usr/local/bin/meyectl startserver -c /etc/motioneye/motioneye.conf
+        state: present
+      when:
+        - ansible_facts['distribution'] == 'Debian'
+        - ansible_facts['distribution_major_version'] | int >= 12
 
     - name: Disable Motion daemon
       become: yes
